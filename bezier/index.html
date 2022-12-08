@@ -1,0 +1,147 @@
+ <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bézier Curves - Ortunio</title>
+    <link rel="stylesheet" href="style.css">
+
+    <script
+      defer
+      src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.5.0/p5.min.js"
+      integrity="sha512-WJXVjqeINVpi5XXJ2jn0BSCfp0y80IKrYh731gLRnkAS9TKc5KNt/OfLtu+fCueqdWniouJ1ubM+VI/hbo7POQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script defer src="./script.js"></script>
+
+
+        <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/tomorrow-night-bright.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+  </head>
+
+
+  <body>
+    <h1>Bézier Curves</h1>
+      <p>
+        Originally Bézier curves were used for designing cars by Pierre Bézier; since then many other uses of Bézier curves have been adapted. Abstractly, Bézier curves are a way of storing lines in a computer using few control points. Storage as a Bézier curve rather has the advantage of "infinite sharpness". The curve can always be scaled up or down using only the control points, compared to other storage methods where resolution can only be scaled down. They are also particularly good for interpolating functions that might otherwise be impossible to model with a equation. Other uses include Fonts, smooth velocity modeling, etc.
+      </p>
+
+    <h3>Bernstein Polynomials</h3>
+      <p>
+        Bernstein Polynomials are the mathmatical basis for Bézier Curves. They were developed significantly before Bézier Curves (approx 40 years). Specifically, a Bézier Curve is a Bernstein Polynomial restricted to t values [0,1]. In terms of my knowlege they are out of reach currently.<br>
+        Additional reading: <a href="https://www2.math.upenn.edu/~kadison/bernstein.pdf">Pdf on Bernstein Polynomials</a>
+      </p>
+
+    <h1>Math/Application</h1>
+      <p>
+        A Bézier Curve is stored as control points that can then be unwrapped into a parametric function of one parameter (t). A defining characteristic of Bézier Curves is that the domain on t is limited [0, 1]. The simplest method of rendering is subdividing the domain [0,1] by an integer i and then plugging in to the function. The i points can then be connected sequentially using lines to fill in the gaps. The tolerance for deviation has to be tiny, or else it becomes very obvious to the naked eye that it is jagged rather than smooth. 
+        <br>In the following sections I'll use P<sub>n</sub> to denote the nth control point.
+      </p>
+
+    <h2>1: Trival Case </h2>
+      <p>
+        Bézier Curve is degenerate, and is really just single point. This really isn't considered a Bézier Curve, but for the sake of completeness it is noted.
+        <br><b>B(t) = P<sub>0</sub></b>
+      </p>
+
+    <!-- Single Point that is movable-->
+    <div id="curve1"></div>
+
+
+
+    <h2>2: Conventional Line</h2>
+      <p>
+        Bézier Curve is just a line from P<sub>0</sub> -> P<sub>1</sub>. It's parameterization is the conventional parameterization of a line.
+        <br><b>B(t) = tP<sub>0</sub> + (1-t)P<sub>1</sub></b>
+      </p>
+
+    <!-- Standard Line -->
+    <div id="curve2"></div>
+
+
+    <h2>3: Quadratic Bézier Curve</h2>
+      <p>
+        It's at this point that the curves begin to show their curvyness. Of the 3 points describing the curve, two are end-points and one is a control point. Control points do not, and almost alway don't, have to lie on the curve. The control point pulls the curve towards it as can be seen with the parameterization. Initially the first end-point is biased, as t increases the bias smoothly switches to the control point. Following that the final end-point is biased.
+        <br><b>B(t) = ( (1-t)<sup>2</sup> x P<sub>0</sub> ) + ( 2 x (1-t) x t x P<sub>1</sub> ) + ( t<sup>2</sup> x P<sub>2</sub> )</b>
+      </p>
+
+<pre><code id="code">function quadratic_bezier(p0, p1, p2, t){
+  let a = (1-t)**2 * p0;
+  let b = 2*(1-t) * t * p1;
+  let c = t**2 * p2;
+  return(a + b + c)
+}</code></pre>
+    <!-- Quadratic Bezier Curve -->
+    <div id="curve3"></div>
+    
+    <p>
+      <br>A litte aside, I was interested in what the curve would look like without the choose factor. This is the result. In retrospect it makes perfect sense when considering the equation. The second point is weighed half as much. <br>
+    </p>
+    <pre><code class="language-js">function malformed_quadratic_bezier(p0, p1, p2, t){
+  let a = (1-t)**2 * p0;
+  let b = (1-t) * t * p1;
+  let c = t**2 * p2;
+  return(a + b + c)
+}</code></pre>
+    <div id="incorrect_curve3"></div>
+
+    <h2>4: Cubic Bézier Curve</h2>
+      <p>
+        This is probably the most practical Bézier Curve. The logic of what's happening is identical to quadratic Bézier Curves with the sole difference being an extra control point is placed between the final end-point and the first control point. 
+        <br><b>B(t) = ( (1 - t)<sup>3</sup> x p<sub>0</sub> ) + ( 3 x (1 - t)<sup>2</sup> x t x p<sub>1</sub> ) + ( 3 x (1 - t) x t<sup>2</sup> x p<sub>2</sub> ) + ( t<sup>3</sup> x p3 )</b>
+      </p>
+
+<pre><code class="language-js">function cubic_bezier(p0, p1, p2, p3, t) {
+  let a = (1 - t) ** 3 * p0;
+  let b = 3 * (1 - t) ** 2 * t * p1;
+  let c = 3 * (1 - t) * t ** 2 * p2;
+  let d = t ** 3 * p3;
+  return a + b + c + d;
+}</code></pre>
+
+    <div id="curve4"></div>
+
+
+    <h2>5: Further Degree Bézier Curve</h2>
+      <p>
+        Further degree Bézier Curves are uncommon in computer graphics, because of their increased computational cost, for little to no benefit in most use cases. There is a prefered solution, splines, which will be discussed below.
+
+      </p>
+
+<pre><code class="language-js">function beyond_cubic_bezier(p0, p1, p2, p3, p4, t) {
+  let a = (1 - t) ** 4 * p0;
+  let b = 4 * (1 - t) ** 3 * t * p1;
+  let c = 6 * (1 - t) ** 2 * t ** 2 * p2;
+  let d = 4 * (1 - t) * t ** 3 * p3;
+  let e = t ** 4 * p4;
+  return a + b + c + d + e;
+}</code></pre>
+
+    <div id="curve5"></div>
+
+
+    <h1>Splines & Further Uses/Extensions</h1>
+      <p>
+        Splines are an alternative to an large degree Bézier Curve. Rather than having one giant curve, the curve can be broken up into segments, sharing end points with each other. The advantage is that splines are computationally simpler to computer, and for most use cases cubic Bézier Curves should suffice. A small note, something rather interesting is that a cubic Bézier Curve can be perfectly modeled by a spline of two quadratic Bézier Curves. This is a taste of the recursive nature of the curves.
+      </p>
+      <h3>Cubic Spline</h3>
+      <div id="spline2"></div>
+      <h3>Quadratic Spline</h3>
+      <div id="spline"></div>
+      <h3>Cubic Bézier Curve</h3>
+      <div id="Cubic_demo2"></div>
+
+    <h1>Recursive Formula/De Casteljau's algorithm</h1>
+      <p>
+        Up till this point all of the formulas have been shown in their explicit form. In reality there is a more modular way to compute them, with the huge advantage of computational stability on computers. Though I don't have a good graphic to show written by myself for De Casteljau's algorithm, <a href="https://observablehq.com/@mbostock/de-casteljaus-algorithm">here is a link to one.</a>
+      </p>
+
+  </body>
+
+</html>
